@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Database {
-    private static final String URL = "jdbc:postgresql://localhost:5432/db_compesation";
+    private static final String URL = "jdbc:postgresql://localhost:5432/SUA_BASE_DE_DADOS";
     private static final String USER = "postgres";
     private static final String PASSWORD = "1234";
 
