@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Upload - Bases 3.0</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 780px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #0001;
+            padding: 32px 24px 24px 24px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d3e50;
+        }
+        .descricao {
+            background: #eaf6ff;
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 12px;
+            display: block;
+        }
+        select, input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #b0bec5;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        button {
+            width: 100%;
+            background: #2196f3;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1769aa;
+        }
+        #result {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 15px;
+        }
+        .dependencias {
+            margin-top: 32px;
+            background: #fffbe7;
+            border-left: 4px solid #ffc107;
+            padding: 14px;
+            font-size: 14px;
+        }
+        .observacao {
+            margin-top: 18px;
+            background: #fbe9e7;
+            border-left: 4px solid #ff7043;
+            padding: 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Upload de Arquivo Base</h1>
+    <div class="descricao">
+        <strong>Como utilizar:</strong><br>
+        1. <b>Selecione a base de dados</b> desejada no campo abaixo.<br>
+        2. <b>Escolha o arquivo</b> que deseja enviar (<b>formatos aceitos: .csv ou .xlsx</b>).<br>
+        3. Clique em <b>Enviar</b> para iniciar o upload.<br><br>
+        <b>O que acontece após o envio?</b><br>
+        - O arquivo será processado em lotes de até <b>5.000 linhas</b> por vez.<br>
+        - Os dados serão inseridos na tabela correspondente da base selecionada.<br>
+        - O progresso e eventuais erros serão exibidos abaixo.<br><br>
+        <b>Quando usar?</b><br>
+        - Sempre que precisar importar grandes volumes de dados para as bases do sistema.<br>
+        - Ideal para cargas periódicas ou migração de dados.<br>
+        <br>
+        <b>Observação importante:</b> Certifique-se de que o arquivo segue o padrão esperado pela base selecionada. Consulte o responsável técnico em caso de dúvidas sobre o layout.
+    </div>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label for="baseSelect">Selecione a Base:</label>
+        <select id="baseSelect" name="base" required>
+            <option value="">Carregando bases...</option>
+        </select>
+
+        <label for="fileInput">Selecione o arquivo (.csv ou .xlsx):</label>
+        <input type="file" id="fileInput" name="file" accept=".csv,.xlsx" required>
+
+        <button type="submit">Enviar</button>
+    </form>
+    <div id="result"></div>
+
+    <div class="dependencias">
+        <b>Dependências necessárias (backend):</b><br>
+        Para processar arquivos <b>XLSX</b> e <b>CSV</b> no backend Java, adicione os seguintes JARs na pasta <code>libs/</code>:<br>
+        <ul>
+            <li>commons-collections4-4.4.jar</li>
+            <li>commons-compress-1.21.jar</li>
+            <li>commons-io-2.19.0.jar</li>
+            <li>commons-math3-3.6.jar</li>
+            <li>log4j-api-2.20.0.jar</li>
+            <li>log4j-core-2.20.0.jar</li>
+            <li>ooxml-schemas-1.4.jar</li>
+            <li>poi-5.2.5.jar</li>
+            <li>poi-ooxml-5.2.5.jar</li>
+            <li>poi-ooxml-lite-5.2.5.jar</li>
+            <li>stax-api-1.0.1.jar</li>
+            <li>xmlbeans-5.3.0.jar</li>
+        </ul>
+        <b>Banco de dados:</b> PostgreSQL (configure o acesso no backend).
+    </div>
+    <div class="observacao">
+        <b>Dica:</b> Para arquivos grandes, aguarde o processamento ser concluído antes de enviar outro arquivo.<br>
+        Em caso de erro, verifique se o arquivo está no formato correto e se a base foi selecionada.
+    </div>
+</div>
+<script>
+    $(document).ready(function() {
+        // 1. Buscar bases disponíveis
+        $.ajax({
+            url: '/api/bases',
+            method: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var select = $('#baseSelect');
+                select.empty();
+                if (data && data.length > 0) {
+                    select.append('<option value="">Selecione...</option>');
+                    $.each(data, function(i, base) {
+                        select.append('<option value="' + base.id_bases + '">' + base.nome_tabela_raw + '</option>');
+                    });
+                } else {
+                    select.append('<option value="">Nenhuma base encontrada</option>');
+                }
+            },
+            error: function() {
+                $('#baseSelect').html('<option value="">Erro ao carregar bases</option>');
+            }
+        });
+
+        // 2. Enviar arquivo via AJAX
+        $('#uploadForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $('#result').html('Enviando arquivo...');
+            $.ajax({
+                url: '/api/uploads',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#result').html('<span style="color:green;">Arquivo enviado e processado com sucesso!</span>');
+                },
+                error: function(xhr) {
+                    $('#result').html('<span style="color:red;">Erro ao enviar arquivo: ' + xhr.responseText + '</span>');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
